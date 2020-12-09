@@ -1,4 +1,4 @@
-# CIS2430_A2
+# README
 CIS2430 (Object-Oriented Programming)
 Assignment 2
 
