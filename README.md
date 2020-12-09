@@ -4,7 +4,6 @@ Assignment 2
 
 ## Author Information
 * Name: Rabia Qureshi
-* Email: rqureshi@uoguelph.ca
 * Student ID: 1046427
 
 ## Instructions for operating the program
