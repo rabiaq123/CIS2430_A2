@@ -1,5 +1,5 @@
 # README
-CIS2430 (Object-Oriented Programming)
+CIS2430*S20 (Object-Oriented Programming)
 Assignment 2
 
 ## Author Information
