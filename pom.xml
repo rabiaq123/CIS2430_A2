@@ -1,0 +1,107 @@
+<!--
+This pom.xml file can be treated like a makefile, but allows for tons more utility.
+
+clean:  mvn clean
+checkstyle: mvn checkstyle:checkstyle  (results show up in target/site)
+compile : mvn compile
+junit: mvn test
+execute: mvn exec:java
+jar: mvn assembly:assembly
+ (this will make two jar files.  Use the one with dependencies)
+
+to run your executable jar: java -jar <pathtoexecutablejarwithdependencies> <flags>
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion> <!--Maven version number (set to 4.0.0)-->
+    <groupId>org.example</groupId> <!--ID for the group this project is part of-->
+    <artifactId>2430_A2</artifactId> <!--ID for the project itself-->
+    <version>1.0</version> <!--project version number-->
+
+    <!--"properties" is where you assign additional properties to the project-->
+    <properties>
+        <maven.compiler.release>11</maven.compiler.release> <!--Java version (we use Java 11 for this course)-->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <!-- we recommend but don't require that you use json simple for json parsing -->
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!--"build" is where you tell Maven what to do with your project when you execute it-->
+    <build>
+        <plugins>
+            <!--list of plugins utilized in this build-->
+            <plugin>
+                <!--the plugin that allows us to execute code -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+
+                <!--"executions" is where we put the objectives of the pom.xml file (like Makefile targets)-->
+                <executions>
+                    <execution>
+                        <goals>
+                            <!--its purpose and functionality)-->
+                            <goal>java</goal> <!--the goal of this execution is to run the "java" console command-->
+                        </goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <!--tell the plugin which class to run -->
+                    <mainClass>adventure.Game</mainClass>
+                </configuration>
+
+            </plugin>
+            <plugin>
+                <!-- the compile plugin -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.5.1</version>
+                <inherited>true</inherited>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- the checkstyle plugin -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <!-- assumes you have a local configuration file -->
+                    <configLocation>config/checks.xml</configLocation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>adventure.Game</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
