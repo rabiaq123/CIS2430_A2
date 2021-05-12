@@ -1,0 +1,171 @@
+{
+    "adventure": {
+        "room": [
+            {
+                "id": 100,
+                "start": "true",
+                "name": "the front yard",
+                "short_description": "This is the front yard overlooking an abandoned mansion",
+                "long_description": "The front yard is an open space which overlooks an abandoned mansion with broken windows",
+                "entrance": [
+                    {
+                        "id": 101,
+                        "dir": "N"
+                    }
+                ],
+                "loot": [
+                    {
+                        "id": 8
+                    }
+                ]
+            },
+            {
+                "id": 101,
+                "name": "the foyer",
+                "short_description": "This is the foyer of the mansion",
+                "long_description": "The foyer is an open space connected to rooms in the surrounding area and a flight of stairs leading to the second floor",
+                "entrance": [
+                    {
+                        "id": 100,
+                        "dir": "S"
+                    },
+                    {
+                        "id": 103,
+                        "dir": "E"
+                    },
+                    {
+                        "id": 104,
+                        "dir": "W"
+                    },
+                    {
+                        "id": 102,
+                        "dir": "up"
+                    }
+                ],
+                "loot": [
+                    {
+                        "id": 7
+                    }
+                ]
+            },
+            {
+                "id": 102,
+                "name": "the master suite",
+                "short_description": "This is the master suite",
+                "long_description": "The master suite is well-lit and has a king-sized bed placed by a wall on the left",
+                "entrance": [
+                    {
+                        "id": 101,
+                        "dir": "down"
+                    }
+                ]
+            },
+            {
+                "id": 103,
+                "name": "the coatroom",
+                "short_description": "This is a coatroom",
+                "long_description": "The coatroom is narrow and filled with spider webs; it appears to have been unused",
+                "entrance": [
+                    {
+                        "id": 101,
+                        "dir": "W"
+                    }
+                ],
+                "loot": [
+                    {
+                        "id": 6
+                    },
+                    {
+                        "id": 2
+                    }
+                ]
+            },
+            {
+                "id": 104,
+                "name": "the office",
+                "short_description": "This is an office inside the mansion",
+                "long_description": "The office is a large room with grey-coloured walls and a large desk in the centre",
+                "entrance": [
+                    {
+                        "id": 101,
+                        "dir": "E"
+                    },
+                    {
+                        "id": 105,
+                        "dir": "N"
+                    }
+                ],
+                "loot": [
+                    {
+                        "id": 3
+                    }
+                ]
+            },
+            {
+                "id": 105,
+                "name": "a secret room",
+                "short_description": "This room was not meant to be discovered..",
+                "long_description": "This is a hidden room connected to the office. There are no light switches in the room",
+                "entrance": [
+                    {
+                        "id": 104,
+                        "dir": "S"
+                    }
+                ],
+                "loot": [
+                    {
+                        "id": 1
+                    },
+                    {
+                        "id": 4
+                    },
+                    {
+                        "id": 5
+                    }
+                ]
+            }
+        ],
+        "item": [
+            {
+                "id": 1,
+                "name": "bottle",
+                "desc": "a sealed black bottle containing an unknown liquid"
+            },
+            {
+                "id": 2,
+                "name": "coat",
+                "desc": "a brand new looking red coat hanging in the coatroom"
+            },
+            {
+                "id": 3,
+                "name": "envelope",
+                "desc": "a sealed envelope with a familiar name written on the front with black ink"
+            },
+            {
+                "id": 4,
+                "name": "candle",
+                "desc": "an unscented candle which can be seen on the floor right upon entering the room"
+            },
+            {
+                "id": 5,
+                "name": "lighter",
+                "desc": "a red lighter which was found beside the candle"
+            },
+            {
+                "id": 6,
+                "name": "keys",
+                "desc": "a set of copper-coated keys lying on the floor"
+            },
+            {
+                "id": 7,
+                "name": "message",
+                "desc": "a ripped piece of paper pinned to the wall on the left with a welcome message written on it"
+            },
+            {
+                "id": 8,
+                "name": "hammer",
+                "desc": "a hammer which was found behind a large oak tree on the yard"
+            }
+        ]
+    }
+}
