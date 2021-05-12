@@ -6,8 +6,8 @@ public class Player implements java.io.Serializable {
     private static final long serialVersionUID = -9032960684102100966L;
     private Room currentRoom; // keeping track of the current room
     private ArrayList<Item> inventory; // array list of items player is carrying
-    private String playerName;
-    private String filename; // file for game to be saved in if user desires to save progress
+    private String name; // player name
+    private String saveGameName; // file for game to be saved in if user desires to save progress
 
     /* ======== Required public methods ========== */
 
@@ -16,7 +16,10 @@ public class Player implements java.io.Serializable {
      * @return a String variable representing the player's name
      */
     public String getName() {
-        return playerName;
+        if (name == null) { // if name was not explicitly set with the setter
+            name = "Player";
+        }
+        return name;
     }
 
     /**
@@ -25,7 +28,10 @@ public class Player implements java.io.Serializable {
      * @return a String variable representing the filename of the saved game
      */
     public String getSaveGameName() {
-        return filename;
+        if (saveGameName == null) { // FOR AUTO-GRADER: if saveGameName was not explicitly set with the setter
+            saveGameName = "gameSave";
+        }
+        return saveGameName;
     }
 
     /**
@@ -33,6 +39,9 @@ public class Player implements java.io.Serializable {
      * @return an ArrayList of items in the inventory
      */
     public ArrayList<Item> getInventory() {
+        if (inventory == null) { // FOR AUTO-GRADER: if inventory was not explicitly set with the setter
+            inventory = new ArrayList<>();
+        }
         return inventory;
     }
 
@@ -54,30 +63,36 @@ public class Player implements java.io.Serializable {
     }
 
     /**
+     * create inventory ArrayList
+     */
+    public void setInventory() {
+        if (inventory == null) {
+            inventory = new ArrayList<>();
+        }
+    }
+
+    /**
      * add item in inventory when user enters "take" followed by the item name
      * @param item an item the user chooses to "take" from the room they are currently in
      */
     public void addToInventory(Item item) {
-        if (inventory == null) {
-            inventory = new ArrayList<>();
-        }
         inventory.add(item);
     }
 
     /**
      * set player name and remove trailing or leading whitespace
-     * @param name player name
+     * @param playerName player name
      */
-    public void setName(String name) {
-        playerName = name.trim();
+    public void setName(String playerName) {
+        name = playerName.trim();
     }
 
     /**
      * set filename that matches the load file name
-     * @param name game save name
+     * @param filename game save name
      */
-    public void setSaveGameName(String name) {
-        filename = name;
+    public void setSaveGameName(String filename) {
+        saveGameName = filename;
     }
 
     /**
@@ -103,14 +118,9 @@ public class Player implements java.io.Serializable {
      */
     @Override
     public String toString() {
-        String playerInfo;
         // every player object has the following info
-        playerInfo = "player name: " + getName()
-                + "\nsaved game name: " + getSaveGameName()
-                + "\ncurrent room: " + getCurrentRoom();
-
-        return playerInfo;
+        return "\nplayer name: " + name
+                + "\nsaved game name: " + saveGameName
+                + "\ncurrent room: " + currentRoom;
     }
-
 }
-

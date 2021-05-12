@@ -18,7 +18,6 @@ public class InvalidCommandException extends Exception {
      */
     @Override
     public String toString() {
-        String invalidCommandMessage = "Error: Invalid input. Enter 'help' for tips.";
-        return invalidCommandMessage;
+        return "\nInvalidCommandException Error: Invalid input. Enter 'help' for tips.";
     }
 }

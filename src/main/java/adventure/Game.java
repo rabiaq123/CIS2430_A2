@@ -19,33 +19,26 @@ public class Game implements java.io.Serializable {
     /* this is the class that runs the game.
     You may need some member variables */
     private static final long serialVersionUID = 8691231374796487356L;
-    private static Adventure myAdventure;
-    private static Player myPlayer = new Player();
+    private Adventure myAdventure;
+    private Player myPlayer = new Player();
     private Parser myParser = new Parser();
     private static Scanner scanner = new Scanner(System.in); // create input buffer
+    private boolean isSerialized = false; // use for overridden toString() method for Game class
 
     /** REQUIRED main method makes calls to primary methods and starts game
      * @param args String array of user input from terminal
      */
     public static void main(String[] args) {
         Game myGame = new Game(); // instantiate object of type Game to avoid using static methods
-        JSONObject jsonObject; // represents parsed file
+        JSONObject jsonObject = myGame.parseCommandLine(args); // send filename to loadAdventureJson(), exit if error
 
-        // loading adventure
-        jsonObject = myGame.parseCommandLine(myGame, args); // send specified file to loadAdventureJson()
-        if (jsonObject == null) { // error in file loading
-            System.exit(-1);
-        }
-
-        myGame.startMessage();
-        myGame.help();
-
+        myGame.welcomeDisplay(); // main screen - welcome message and instructions for game play
         // generating adventure and starting game
-        myAdventure = myGame.generateAdventure(jsonObject);
+        myGame.setMyAdventure(myGame.generateAdventure(jsonObject));
         myGame.setPlayerName();
         myGame.gameLoop(myGame.startLocation()); // begin game if no error with file loading or file itself
 
-        myGame.quit();
+        myGame.endScreen();
     }
 
     /* you must have these instance methods and may need more */
@@ -67,92 +60,6 @@ public class Game implements java.io.Serializable {
     }
 
     /**
-     * REQUIRED returns an Adventure object using information from parsed JSON file
-     * @param obj JSONObject that has file parsed into it
-     * @return an Adventure instance to use for the rest of the game
-     */
-    public Adventure generateAdventure(JSONObject obj) {
-        Adventure generatedAdv = new Adventure();
-
-        // parse the contents of the file and create the adventure
-        JSONObject myObj = (JSONObject) obj.get("adventure");
-        // retrieving arrays
-        JSONArray itemList = (JSONArray) myObj.get("item");
-        JSONArray roomList = (JSONArray) myObj.get("room");
-        // parsing arrays by iterating through each array one object at a time
-        itemList.forEach(item -> parseItemObject(generatedAdv, (JSONObject) item));
-        roomList.forEach(room -> parseRoomObject(generatedAdv, (JSONObject) room));
-
-        return generatedAdv;
-    }
-
-    /* MY ADDITIONAL METHODS */
-
-    /** parse command-line arguments and perform action based on arguments
-     * NEED TO ADD FUNCTIONALITY FOR THE -L FLAG
-     * @param theGame
-     * @param args represents command-line arguments
-     * @return a JSONObject representing the parsed file
-     */
-    public JSONObject parseCommandLine(Game theGame, String[] args) {
-        JSONObject jsonObj = null;
-
-        // need command-line flag followed by filename or game save name
-        if (args.length == 2) {
-            if (args[0].equals("-a")) {
-                jsonObj = loadAdventureJson(args[1]);
-            } else if (args[0].equals("-l")) {
-                loadSavedGame(args[1]);
-                displayRoomInfo(myPlayer.getCurrentRoom());
-                gameLoop(myPlayer.getCurrentRoom());
-                quit();
-            }
-        } else if (args.length == 0) {
-            System.out.println("No command line arguments provided.\nGenerating default adventure...");
-            InputStream inputStream = Game.class.getClassLoader().getResourceAsStream("default_adventure.json");
-            jsonObj = loadAdventureJson(inputStream);
-        } else {
-            commandLineError();
-        }
-
-        return jsonObj;
-    }
-
-    /**
-     * load serialized game and error-handling for unsuccessful game load
-     * @param filename name of serialized file the user entered (may be valid or invalid)
-     */
-    public void loadSavedGame(String filename) {
-        Adventure savedAdventure = null;
-//        Game savedGame = null;
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
-            savedAdventure = (Adventure)in.readObject();
-//            savedGame = (Game)in.readObject();
-            System.out.println("Your game has successfully loaded!");
-        } catch (IOException e) {
-            System.out.println("IOException is caught " + e);
-            System.exit(-1);
-        } catch (Exception e) {
-            fileLoadingError();
-            System.exit(-1);
-        }
-    }
-
-    /**
-     * prompt user for name
-     */
-    private void setPlayerName() {
-        String name = null;
-        do {
-            System.out.println("\nEnter a name to begin:");
-            System.out.print("> ");
-            name = scanner.nextLine();
-        } while (name.isEmpty());
-
-        myPlayer.setName(name);
-    }
-
-    /**
      * REQUIRED loads the default adventure
      * @param inputStream stream of data
      * @return JSONObject which file was parsed into
@@ -169,119 +76,258 @@ public class Game implements java.io.Serializable {
     }
 
     /**
-     * parses keys within each Item object from item array in JSON file
-     * @param generatedAdv Adventure object representing the generated adventure using the file given to load game
-     * @param item JSON object representing one item from items list in JSON file
+     * REQUIRED returns an Adventure object using information from parsed JSON file
+     * @param obj JSONObject that has file parsed into it
+     * @return an Adventure instance to use for the rest of the game
      */
-    public void parseItemObject(Adventure generatedAdv, JSONObject item){
-        Item nextItem = new Item();
-        // get keys within item array element
-        try { // error-checking for incorrectly formatted JSON file
-            long id = (Long) item.get("id");
-            String name = (String) item.get("name");
-            String desc = (String) item.get("desc");
-            setItemCheck(name, desc); // check for null values
-            nextItem.setItem(id, name, desc); // store information in item object
-        } catch (Exception e) {
-            fileParsingError();
-        }
+    public Adventure generateAdventure(JSONObject obj) {
+        Adventure generatedAdv = new Adventure();
+        // parse the contents of the file and create the adventure
+        JSONObject myObj = (JSONObject) obj.get("adventure");
+        // retrieving arrays
+        JSONArray itemList = (JSONArray) myObj.get("item");
+        JSONArray roomList = (JSONArray) myObj.get("room");
+        // parsing arrays by iterating through each array one object at a time
+        itemList.forEach(item -> parseItemObject(generatedAdv, (JSONObject) item));
+        roomList.forEach(room -> parseRoomObject(generatedAdv, (JSONObject) room));
+        return generatedAdv;
+    }
 
-        generatedAdv.addItem(nextItem); // add item to adventure
+    /* MY ADDITIONAL METHODS */
+
+    /**
+     * display welcome message and tips to user once file loads and adventure begins
+     */
+    private void welcomeDisplay() {
+        startMessage();
+        help();
+    }
+
+    /**
+     * parse command-line arguments and perform action based on arguments
+     * @param args represents command-line arguments
+     * @return a JSONObject representing the parsed file
+     */
+    private JSONObject parseCommandLine(String[] args) {
+        JSONObject jsonObj = null;
+        // need command-line flag followed by filename or game save name
+        if (args.length == 2) {
+            if (args[0].equals("-a")) {
+                jsonObj = loadAdventureJson(args[1]);
+            } else if (args[0].equals("-l")) {
+                loadSavedGame(args[1]);
+            }
+        } else if (args.length == 0) {
+            jsonObj = loadDefault();
+        } else {
+            commandLineError();
+        }
+        // error in file loading
+        if (jsonObj == null) {
+            System.exit(-1);
+        }
+        return jsonObj;
+    }
+
+    /**
+     * load default adventure if no command-line arguments are given
+     * @return a JSONObject representing the parsed file
+     */
+    private JSONObject loadDefault() {
+        System.out.println("No command line arguments provided.\nGenerating default adventure...");
+        InputStream inputStream = Game.class.getClassLoader().getResourceAsStream("default_adventure.json");
+        JSONObject jsonObj = loadAdventureJson(inputStream);
+
+        return jsonObj;
+    }
+
+    /**
+     * prompt user for name
+     */
+    private void setPlayerName() {
+        String name;
+        do {
+            System.out.println("\nEnter a name to begin:");
+            name = promptInput();
+        } while (name.isEmpty());
+
+        myPlayer.setName(name);
     }
 
     /**
      * parses keys within each Item object from item array in JSON file
-     * @param generatedAdv represents the generated adventure using the file given to load game
-     * @param room JSON object representing one room from rooms list in JSON file
+     * @param generatedAdv adventure generated using the file given to load game
+     * @param item JSON object representing one item from items list in JSON file
      */
-    public void parseRoomObject(Adventure generatedAdv, JSONObject room) {
-        Room nextRoom = new Room();
-
-        // parse keys within room array element
-        nextRoom = setStartRoom(room, nextRoom); // mark first room in adventure as start room
+    private void parseItemObject(Adventure generatedAdv, JSONObject item) {
+        Item nextItem = new Item();
+        // get keys within item array element
         try { // error-checking for incorrectly formatted JSON file
-            long roomID = (Long) room.get("id");
-            String name = (String) room.get("name");
-            String shortDesc = (String) room.get("short_description");
-            String longDesc = (String) room.get("long_description");
-            setRoomCheck(name, shortDesc, longDesc); // check for null values
-            nextRoom.setRoomInfo(roomID, name, shortDesc, longDesc); // store information in Room object
+            parseItemInfo(nextItem, item);
         } catch (Exception e) {
             fileParsingError();
         }
-        // parse and set room entrances and loot
-        nextRoom = parseEntrance(room, nextRoom);
-        nextRoom = parseLoot(generatedAdv, room, nextRoom);
+        generatedAdv.addItem(nextItem); // add item to adventure
+        nextItem.setMyAdv(generatedAdv);
+    }
 
-        generatedAdv.addRoom(nextRoom); // add room to adventure
+    /**
+     * parse keys in item
+     * @param nextItem item being parsed from JSON file
+     * @param item JSONObject representing one item in JSON file
+     */
+    private void parseItemInfo(Item nextItem, JSONObject item) {
+        long id = (Long) item.get("id");
+        String name = (String) item.get("name");
+        String desc = (String) item.get("desc");
+        setItemCheck(name, desc); // check for null values
+
+        setItemInfo(nextItem, id, name, desc);
+    }
+
+    /**
+     * store item id, name, and description in Item object
+     * @param nextItem item being parsed from JSON file
+     * @param id item id
+     * @param name item name
+     * @param desc item desc
+     */
+    private void setItemInfo(Item nextItem, long id, String name, String desc) {
+        nextItem.setItemId(id);
+        nextItem.setName(name);
+        nextItem.setLongDescription(desc);
+    }
+
+    /**
+     * parses keys within each Item object from item array in JSON file
+     * @param generatedAdv adventure generated using the file given to load game
+     * @param room JSON object representing one room from rooms list in JSON file
+     */
+    private void parseRoomObject(Adventure generatedAdv, JSONObject room) {
+        Room nextRoom = new Room();
+        parseStartFlag(nextRoom, room); // mark first room in adventure as start room
+        try { // error-checking for incorrectly formatted JSON file
+            parseRoomInfo(generatedAdv, nextRoom, room); // name, id, short & long description
+        } catch (Exception e) {
+            fileParsingError();
+        }
+        // add room to adventure
+        generatedAdv.addRoom(nextRoom);
+        nextRoom.setMyAdv(generatedAdv);
+    }
+
+    /**
+     * parse keys in room
+     * @param generatedAdv adventure generated using the file given to load game
+     * @param nextRoom room being parsed from JSON file
+     * @param room JSONObject representing one room in JSON file
+     */
+    private void parseRoomInfo(Adventure generatedAdv, Room nextRoom, JSONObject room) {
+        // name, id, descriptions
+        long roomID = (Long) room.get("id");
+        String name = (String) room.get("name");
+        String shortDesc = (String) room.get("short_description");
+        String longDesc = (String) room.get("long_description");
+        setRoomCheck(name, shortDesc, longDesc); // check for null values
+        setRoomInfo(nextRoom, roomID, name, shortDesc, longDesc); // store information in Room object
+
+        parseEntrance(nextRoom, room);
+        parseLoot(generatedAdv, nextRoom, room);
+    }
+
+    /**
+     * store room id, name, short & long description in Room object
+     * @param nextRoom room being parsed from JSON file
+     * @param id room ID
+     * @param name room name
+     * @param shortDesc short description of room
+     * @param longDesc long description of room
+     */
+    private void setRoomInfo(Room nextRoom, long id, String name, String shortDesc, String longDesc) {
+        nextRoom.setRoomId(id);
+        nextRoom.setName(name);
+        nextRoom.setShortDescription(shortDesc);
+        nextRoom.setLongDescription(longDesc);
     }
 
     /**
      * set whether isStart to true or false depending on which room has start flag
+     * @param nextRoom room being parsed from JSON file
      * @param room JSON object representing one room from rooms list in JSON file
-     * @param nextRoom Room object representing the room being parsed
-     * @return Room object with its start flag set
      */
-    private Room setStartRoom(JSONObject room, Room nextRoom) {
+    private void parseStartFlag(Room nextRoom, JSONObject room) {
         boolean isStart = false;
 
         String start = (String) room.get("start");
         if (start != null) {
             isStart = true;
         }
-        nextRoom.setStart(isStart); // store information in Room object
-
-        return nextRoom;
+        nextRoom.setIsStart(isStart); // store information in Room object
     }
 
     /**
      * parse and set room entrances
-     * @param room JSON object representing one room from rooms list in JSON file
      * @param nextRoom Room object representing the room being parsed
-     * @return Room object with its entrances set
+     * @param room JSON object representing one room from rooms list in JSON file
      */
-    private Room parseEntrance(JSONObject room, Room nextRoom) {
+    private void parseEntrance(Room nextRoom, JSONObject room) {
         JSONArray entranceList = (JSONArray) room.get("entrance"); // get keys within entrance array
-        nextRoom.createEntranceMap(); // allocate memory for entrance map
+        nextRoom.setEntrances(); // allocate memory for entrance map
+
         for (int i = 0; i < entranceList.size(); i++) {
             JSONObject entrance = (JSONObject) entranceList.get(i);
-            try { // get keys within entrance array element, error-checking for incorrectly formatted JSON file
-                long entranceID = (Long) entrance.get("id");
-                String dir = (String) entrance.get("dir");
-                setEntranceCheck(dir); // check for null values
-                nextRoom.setEntrance(entranceID, dir); // store information in Room object
+            try { // error-checking for incorrectly formatted JSON file
+                parseEntranceInfo(nextRoom, entrance); // id and direction
             } catch (Exception e) {
                 fileParsingError();
             }
         }
+    }
 
-        return nextRoom;
+    /**
+     * parse and set keys within room entrance array element
+     * @param nextRoom room being parsed from JSON file
+     * @param entrance JSONObject representing one entrance in JSON file
+     */
+    private void parseEntranceInfo(Room nextRoom, JSONObject entrance) {
+        long entranceID = (Long) entrance.get("id");
+        String dir = (String) entrance.get("dir");
+        setEntranceCheck(dir); // check for null values
+
+        nextRoom.addEntrance(entranceID, dir); // store information in Room object
     }
 
     /**
      * parse and set loot in each room
      * @param generatedAdv generated adventure using the file given to load game
-     * @param room JSON object representing one room from rooms list in JSON file
      * @param nextRoom Room object representing the room being parsed
-     * @return Room object with its loot set
+     * @param room JSON object representing one room from rooms list in JSON file
      */
-    public Room parseLoot(Adventure generatedAdv, JSONObject room, Room nextRoom) {
+    private void parseLoot(Adventure generatedAdv, Room nextRoom, JSONObject room) {
         ArrayList<Item> allItems = generatedAdv.listAllItems();
-
         JSONArray lootList = (JSONArray) room.get("loot"); // get keys within loot array
-        if (lootList != null) { // error-checking for no loot
+        if (lootList != null) { // checking if there is loot in room to be parsed
+            nextRoom.setRoomItems(); // allocate memory for ArrayList of room items
             for (int i = 0; i < lootList.size(); i++) {
                 JSONObject loot = (JSONObject) lootList.get(i);
                 long lootID = (Long) loot.get("id");
-                for (Item item : allItems) {
-                    if (lootID == item.getItemID()) {
-                        nextRoom.addRoomItem(item); // store room's loot in roomItems ArrayList of Room class
-                    }
-                }
+                setLoot(allItems, nextRoom, lootID); // set loot id in Room object
             }
         }
+    }
 
-        return nextRoom;
+    /**
+     * set room's loot in Room object
+     * @param allItems ArrayList of all items in JSON file
+     * @param nextRoom room being parsed from JSON file
+     * @param lootID loot id of loot array element in room
+     */
+    private void setLoot(ArrayList<Item> allItems, Room nextRoom, long lootID) {
+        for (Item item : allItems) {
+            if (lootID == item.getItemId()) {
+                nextRoom.addRoomItem(item); // store room's loot in roomItems ArrayList of Room class
+            }
+        }
     }
 
     /**
@@ -330,21 +376,28 @@ public class Game implements java.io.Serializable {
      * find the start location from the JSON file
      * @return the starting Room
      */
-    public Room startLocation() {
+    private Room startLocation() {
         Room startRoom = new Room();
-
         System.out.println("\n[BEGINNING ADVENTURE]----------------------------------------------------");
         // find starting location
         for (int i = 0; i < myAdventure.getTotalNumRooms(); i++) {
-            if (myAdventure.listAllRooms().get(i).getStart()) {
-                startRoom = myAdventure.listAllRooms().get(i); // set current room to start room
-                myPlayer.setCurrentRoom(startRoom);
-                myAdventure.setPlayer(myPlayer);
-                System.out.println(myAdventure.getCurrentRoomDescription() + "."); // display description of start room
+            if (myAdventure.listAllRooms().get(i).getIsStart()) {
+                startRoom = setStartRoom(i);
             }
         }
-        System.out.println("Items present:");
-        printItems(startRoom);
+        displayRoomInfo(startRoom);
+        return startRoom;
+    }
+
+    /**
+     * set starting room of the adventure
+     * @param incrementor for loop incrementor
+     * @return Room object representing the start room
+     */
+    private Room setStartRoom(int incrementor) {
+        Room startRoom = myAdventure.listAllRooms().get(incrementor); // set current room to start room
+        myPlayer.setCurrentRoom(startRoom);
+        myAdventure.setMyPlayer(myPlayer);
 
         return startRoom;
     }
@@ -352,28 +405,22 @@ public class Game implements java.io.Serializable {
     /**
      * contains the game loop which prompts user input and helps user navigate through game
      * loop as long as input is invalid or "quit" has not been entered
-     * @param currentRoom the room the adventure starts in; will change as game loop iterates
+     * @param currentRoom the room the adventure starts in
      */
-    public void gameLoop(Room currentRoom) {
+    private void gameLoop(Room currentRoom) {
         Command nextCommand;
-        boolean invalidInput = false;
+        boolean invalidInput;
         String userInput;
         String[] input;
 
         do {
-            System.out.print("> ");
-            userInput = scanner.nextLine();
-            userInput = userInput.trim(); // remove leading or trailing whitespace
+            userInput = promptInput();
             try {
                 nextCommand = null;
-                nextCommand = parse(userInput); // parse user input into Command - if invalid command, throws exception
+                nextCommand = parse(userInput); // parse user input into Command - throw Exception if invalid command
                 input = userInput.split("\\s+", 2); // store everything after first word into second index
-                invalidInput = checkInput(currentRoom, input);
-                if (!invalidInput) {
-                    currentRoom = play(currentRoom, input);
-                    myPlayer.setCurrentRoom(currentRoom);
-                    myAdventure.setPlayer(myPlayer);
-                }
+                invalidInput = checkInput(currentRoom, input); // invalid if error in "go", "look", or "take" inputs
+                currentRoom = continueAdventure(currentRoom, input, invalidInput);
             } catch (InvalidCommandException e) {
                 invalidInput = true;
                 System.out.println(e.getMessage());
@@ -382,38 +429,45 @@ public class Game implements java.io.Serializable {
     }
 
     /**
+     * if input is valid, update current room and advance in adventure
+     * @param currentRoom a Room object representing the current room the user is in
+     * @param input user input parsed into array of Strings
+     * @param invalidInput a boolean variable representing whether user input was invalid
+     * @return a Room object representing the current room user is in
+     */
+    private Room continueAdventure(Room currentRoom, String[] input, boolean invalidInput) {
+        if (!invalidInput) {
+            currentRoom = play(currentRoom, input);
+            myPlayer.setCurrentRoom(currentRoom);
+            myAdventure.setMyPlayer(myPlayer);
+        }
+        return currentRoom;
+    }
+
+    /**
      * wrapper method for parseUserCommand() method in Parser class
-     * @param userInput
+     * @param userInput user input
      * @return user input parsed into a Command
      * @throws InvalidCommandException if user does not input a command
      */
     private Command parse(String userInput) throws InvalidCommandException {
-        return myParser.parseUserInput(userInput);
+        return myParser.parseUserCommand(userInput);
     }
 
     /**
-     * parsing user input to see what they want
-     * @param currentRoom a Room object representing the current room the user is in
+     * error-checking for valid commands (additional error-checking after parser and command class)
+     * @param currentRoom Room object representing the current room the user is in
      * @param input user input parsed into array of Strings
-     * @return a boolean value representing whether the user input was invalid
+     * @return boolean value representing whether the user input was invalid
      */
     private boolean checkInput(Room currentRoom, String[] input) {
         boolean invalidInput = false;
-
         if (input[0].equals("go")) {
             invalidInput = checkInputGo(currentRoom, input);
         } else if (input[0].equals("look")) {
             invalidInput = checkInputLook(currentRoom, input);
         } else if (input[0].equals("take")) {
             invalidInput = checkInputTake(currentRoom, input);
-        } else if (input[0].equals("help")) {
-            invalidInput = true;
-            help();
-            displayRoomInfo(myPlayer.getCurrentRoom()); // print room name and items in room
-        } else if (input[0].equals("quit")) {
-            confirmQuit(); // if user confirms, method exits program
-            invalidInput = true;
-            displayRoomInfo(myPlayer.getCurrentRoom()); // print room name and items in room
         }
         return invalidInput;
     }
@@ -423,7 +477,11 @@ public class Game implements java.io.Serializable {
      * @param currentRoom the room the user is in
      */
     private void displayRoomInfo(Room currentRoom) {
-        System.out.println("\nYou are now in " + currentRoom.getName() + "."); // display room name
+        if (currentRoom.getIsStart()) {
+            System.out.println("\n" + myAdventure.getCurrentRoomDescription() + "."); // display start room description
+        } else {
+            System.out.println("\nYou are now in " + currentRoom.getName() + "."); // display room name
+        }
         System.out.println("Items present:");
         printItems(currentRoom); // list items in room
     }
@@ -437,13 +495,11 @@ public class Game implements java.io.Serializable {
      */
     private boolean checkInputGo(Room currentRoom, String[] input) {
         boolean invalidInput = false;
-
         // check whether connected room exists
         if (currentRoom.getConnectedRoom(input[1]) == null) {
             invalidInput = true;
             System.out.println("There is nothing in that direction.");
         }
-
         return invalidInput;
     }
 
@@ -456,16 +512,14 @@ public class Game implements java.io.Serializable {
      */
     private boolean checkInputLook(Room currentRoom, String[] input) {
         boolean invalidInput = false;
-
         if (input.length == 2) {
             try { // error-checking if no items are in current room
-                invalidInput = isInvalidItem(currentRoom, input, false);
+                invalidInput = isInvalidItem(currentRoom, input);
             } catch (Exception e) {
                 invalidInput = true;
                 System.out.println("There are no items in this room/area.");
             }
         }
-
         return invalidInput;
     }
 
@@ -478,78 +532,90 @@ public class Game implements java.io.Serializable {
      */
     private boolean checkInputTake(Room currentRoom, String[] input) {
         boolean invalidInput;
-        boolean inventoryCreated = false;
-
         try { // error-checking for no items in current room
-            invalidInput = isInvalidItem(currentRoom, input, false);
+            invalidInput = isInvalidItem(currentRoom, input);
         } catch (Exception e) {
             invalidInput = true;
             System.out.println("Error: There are no items in this room/area.");
         }
-
         return invalidInput;
     }
 
     /**
-     * used by the checkInputTake() and checkInputLook() to check for invalid input for "look" and "go" commands
+     * used by checkInputTake() and checkInputLook() to check for invalid input for "look" and "take" commands
      * @param currentRoom Room object representing the current room the user is in
      * @param input user input parsed into array of Strings
-     * @param invalidInput boolean variable representing whether user input was invalid
-     * @return a boolean variable representing whether user input is invalid; return as soon as var is set to true
+     * @return a boolean variable representing whether user input is invalid
      */
-    private boolean isInvalidItem(Room currentRoom, String[] input, boolean invalidInput) {
-        invalidInput = inInventory(input); // check whether items are in inventory
+    private boolean isInvalidItem(Room currentRoom, String[] input) {
+        boolean invalidInput = itemInInventory(input); // check whether item is in inventory
         if (invalidInput) {
-            return invalidInput;
+            return true;
         }
+        invalidInput = itemInRoom(currentRoom, input); // check whether item is in room
+        return invalidInput;
+    }
 
+    /**
+     * check room items ArrayList to determine whether user can "take" or "look" at desired item
+     * @param currentRoom Room object representing the current room the user is in
+     * @param input user input parsed into array of Strings
+     * @return a boolean variable representing whether user can "look" at or "take" desired item
+     */
+    private boolean itemInRoom(Room currentRoom, String[] input) {
+        boolean invalidInput = true;
         for (Item roomItem : currentRoom.listItems()) { // check whether item is in list of items in room
-            if (!input[1].equals(roomItem.getName())) {
-                invalidInput = true;
-            } else {
+            if (input[1].equals(roomItem.getName())) {
                 invalidInput = false;
-                break; // NOTE: refactor code to remove break statement!
             }
         }
         if (invalidInput) {
             System.out.println("Error: There is no such item in this room/area.");
         }
-
         return invalidInput;
     }
 
     /**
-     * checks inventory ArrayList to determine whether user is already carrying the item they want to "take"
+     * check inventory ArrayList to determine whether user is already carrying item they want to "look" at / "take"
      * @param input user input parsed into array of Strings
      * @return a boolean variable representing whether item from user input was already "taken"
      */
-    private boolean inInventory(String[] input) {
+    private boolean itemInInventory(String[] input) {
         boolean invalidInput = false;
-
-        if (myPlayer.getInventory() != null) { // if item is not in room, it may be in the inventory!
+        if (!myPlayer.getInventory().isEmpty()) { // if item is not in room, it may be in the inventory!
             invalidInput = myPlayer.isTakenItem(input[1]);
             if (invalidInput) {
                 if (input[0].equals("take")) {
-                    System.out.println("Error: You are already carrying this item.");
-                    return invalidInput;
+                    System.out.println("You are already carrying this item.");
                 } else if (input[0].equals("look")) {
-                    System.out.println("Error: You may only 'look' at items in this room/area.");
-                    return invalidInput;
+                    System.out.println("You may only 'look' at this room/area or the items within it.");
                 }
             }
         }
-
         return invalidInput;
     }
 
     /**
-     * perform actions based on user input
+     * perform action based on whether user entered help or quit - input does not need to be checked further
+     * @param currentRoom a Room object representing the current room the user is in
+     * @param input user input parsed into array of Strings
+     */
+    private void helpOrQuit(Room currentRoom, String input) {
+        if (input.equals("help")) {
+            help();
+            displayRoomInfo(currentRoom); // print room name and items in room
+        } else if (input.equals("quit")) {
+            quit(); // if user confirms, method exits program
+        }
+    }
+
+    /**
+     * perform actions based on (valid) user input
      * @param theRoom temp variable to be used in this method to represent the current room
      * @param input user input parsed into array of Strings
      * @return an object of type Room to update the current room if the user input leads to a room from file
      * */
-    public Room play(Room theRoom, String[] input) {
-        // checking whether user wants to "go" somewhere, "look", or "take" an item
+    private Room play(Room theRoom, String[] input) {
         if (input[0].equals("go")) {
             theRoom = playGo(theRoom, input);
         } else if (input[0].equals("look")) {
@@ -557,10 +623,10 @@ public class Game implements java.io.Serializable {
         } else if (input[0].equals("take")) {
             playTake(theRoom, input);
         } else if (input[0].equals("inventory")) {
-            System.out.println(myPlayer.getName().toUpperCase() + "'s Inventory:");
             printInventory();
+        } else {
+            helpOrQuit(theRoom, input[0]);
         }
-
         return theRoom;
     }
 
@@ -573,12 +639,9 @@ public class Game implements java.io.Serializable {
     private Room playGo(Room currentRoom, String[] input) {
         currentRoom = currentRoom.getConnectedRoom(input[1]); // set current room to connected room
         myPlayer.setCurrentRoom(currentRoom);
-        myAdventure.setPlayer(myPlayer);
+        myAdventure.setMyPlayer(myPlayer);
         displayRoomInfo(currentRoom); // print room name and items in room
 
-        /* TOSTRING CHECK
-        System.out.println(currentRoom);
-        */
         return currentRoom;
     }
 
@@ -606,24 +669,18 @@ public class Game implements java.io.Serializable {
      * @param input user input parsed into array of Strings
      */
     private void playTake(Room currentRoom, String[] input) {
-        Item carriedItem = null;
-        int carriedItemIndex = 0;
-        boolean itemFound = false;
-
+        Item carriedItem;
         // find index at which the item is in ArrayList of items in the room
         for (int i = 0; i < currentRoom.listItems().size(); i++) {
-            if (input[1].equals(currentRoom.listItems().get(i).getName())) {
-                itemFound = true;
-                carriedItemIndex = i;
+            if (input[1].equals(currentRoom.listItems().get(i).getName())) { // item found in current room
                 carriedItem = currentRoom.listItems().get(i);
+                myPlayer.setInventory();
+                myPlayer.addToInventory(carriedItem);
+                currentRoom.removeItem(currentRoom.listItems().indexOf(carriedItem));
+                System.out.println("You are now carrying the " + carriedItem.getName() + ".");
             }
         }
-        if (itemFound) {
-            myPlayer.addToInventory(carriedItem);
-            currentRoom.removeItem(carriedItemIndex);
-            currentRoom.deleteList();
-            System.out.println("You are now carrying the " + carriedItem.getName() + ".");
-        }
+        currentRoom.deleteListItems(); // set roomItems ArrayList to null if no remaining items in room
     }
 
     /**
@@ -632,12 +689,8 @@ public class Game implements java.io.Serializable {
      */
     private void printItems(Room theRoom) {
         try { // error-checking for uninitialized roomItems list (i.e. no items were originally in given room)
-            if (theRoom.listItems().size() != 0) {
-                for (int i = 0; i < theRoom.listItems().size(); i++) {
-                    System.out.printf("* %s\n", theRoom.listItems().get(i).getName());
-                }
-            } else {
-                System.out.println("There are no items in this room/area.");
+            for (Item roomItem : theRoom.listItems()) {
+                System.out.printf("* %s\n", roomItem.getName());
             }
         } catch (Exception e) {
             System.out.println("There are no items in this room/area.");
@@ -648,19 +701,67 @@ public class Game implements java.io.Serializable {
      * print items in inventory
      */
     private void printInventory() {
-        try {
-            for (int i = 0; i < myPlayer.getInventory().size(); i++) {
-                System.out.printf("* %s\n", myPlayer.getInventory().get(i).getName());
+        System.out.println(myPlayer.getName().toUpperCase() + "'s Inventory:");
+        if (!myPlayer.getInventory().isEmpty()) {
+            for (Item inventoryItem : myPlayer.getInventory()) {
+                System.out.printf("* %s\n", inventoryItem.getName());
             }
-        } catch (Exception e) {
+        } else {
             System.out.println("There are no items in your inventory.");
         }
     }
 
     /**
+     * prompt user for input
+     * @return a String representing the user input
+     */
+    private String promptInput() {
+        String userInput;
+        System.out.print("> ");
+        userInput = scanner.nextLine();
+        userInput = userInput.trim(); // remove leading or trailing whitespace
+
+        return userInput;
+    }
+
+    /**
+     * REQUIRED (must have public setters for all member variables)
+     * set myAdventure instance variable in Game class
+     * @param adv Adventure object
+     */
+    public void setMyAdventure(Adventure adv) {
+        myAdventure = adv;
+    }
+
+    /**
+     * REQUIRED (must have public setters for all member variables)
+     * set myParser instance variable in Game class
+     */
+    public void setMyParser() {
+        myParser = new Parser();
+    }
+
+    /**
+     * REQUIRED (must have public setters for all member variables)
+     * set myPlayer instance variable in Game class
+     */
+    public void setMyPlayer() {
+        myPlayer = new Player();
+    }
+
+    /**
+     * REQUIRED (must have public setters for all member variables)
+     * set isSerialized instance variable in Game class
+     * @param isSavedGame Adventure object
+     */
+    public void setIsSerialized(boolean isSavedGame) {
+        isSerialized = isSavedGame;
+    }
+
+    /**
      * prints start message once user selects file to read from
      */
-    public void startMessage() {
+    private void startMessage() {
         System.out.println("\n[WELCOME!]---------------------------------------------------------------");
         System.out.println("This is a prototype game modeled after the 1977 game Colossal Caves by Will Crowther.");
         System.out.println("This version of the game will load an adventure description from file and allow you to \n"
@@ -674,8 +775,7 @@ public class Game implements java.io.Serializable {
         System.out.println(myParser.allCommands());
         System.out.println("[SOME TIPS]--------------------------------------------------------------");
         System.out.println("As a player of this game, you may:\n"
-                + " -- move from room to room in the adventure using the keyword 'go' and the subjects: N, S, E or W.\n"
-                + " -- move up or down stairs in the adventure when you type 'go up' or 'go down'.\n"
+                + " -- move rooms in the adventure using the keyword 'go' and the subjects: N, S, E, W, up, or down.\n"
                 + " -- see a longer description of the room when you type 'look'.\n"
                 + " -- see a longer description of an item in the room when you type 'look' followed by item name.\n"
                 + " -- pick up an item and carry it when you type 'take' followed by an item name.\n"
@@ -687,7 +787,7 @@ public class Game implements java.io.Serializable {
     /**
      * prints our error message for incorrect usage of command line arguments
      */
-    public void commandLineError() {
+    private void commandLineError() {
         System.out.println("Usage: [-a] <filename.json> or [-l] <game save name>");
         System.exit(-1);
     }
@@ -695,7 +795,7 @@ public class Game implements java.io.Serializable {
     /**
      * prints out error message for incorrectly formatted file
      */
-    public void fileParsingError() {
+    private void fileParsingError() {
         System.out.println("Error: JSON file is incorrectly formatted.");
         System.out.println("Exiting...");
         System.exit(-1);
@@ -704,55 +804,35 @@ public class Game implements java.io.Serializable {
     /**
      * prints out error message if file could not be loaded
      */
-    public void fileLoadingError() {
+    private void fileLoadingError() {
         System.out.println("Error: File could not be loaded. Please try verifying your filename.");
         System.out.println("Exiting...");
         System.exit(-1);
     }
 
     /**
-     * confirm whether user wants to quit program
+     * exit program if user enters "quit"
      */
-    public void confirmQuit() {
+    private void quit() {
         boolean invalidInput;
-        String userInput;
-
-        System.out.println("\nAre you sure you'd like to quit? (Y/N)");
+        System.out.println("Would you like to save your progress? (Y/N)");
         do {
-            System.out.print("> ");
-            userInput = scanner.nextLine();
+            String userInput = promptInput();
+            invalidInput = false;
             if (userInput.equals("Y")) {
-                invalidInput = false;
-                quit();
-            } else if (userInput.equals("N")) {
-                invalidInput = false;
-            } else {
+                saveGame();
+            } else if (!userInput.equals("N")) { // if user input is neither "Y" nor "N"
                 invalidInput = true;
                 System.out.println("I don't understand...");
             }
         } while (invalidInput);
+        endScreen();
     }
 
     /**
-     * exit program if user enters "quit"
+     * show thank you for playing message
      */
-    public void quit() {
-        boolean invalidInput = false;
-        System.out.println("Would you like to save your progress? (Y/N)");
-        do {
-            System.out.print("> ");
-            String userInput = scanner.nextLine();
-            if (userInput.equals("Y")) {
-                invalidInput = false;
-                saveGame();
-            } else if (userInput.equals("N")) {
-                invalidInput = false;
-            } else {
-                invalidInput = true;
-                System.out.println("I don't understand...");
-            }
-        } while (invalidInput);
-
+    private void endScreen() {
         System.out.println("\n[THANKS FOR PLAYING!]----------------------------------------------------\n");
         System.exit(0);
     }
@@ -760,46 +840,116 @@ public class Game implements java.io.Serializable {
     /**
      * serialize game before exiting if user desires
      */
-    public void saveGame() {
-        String filename = setAdventureName();
-        Adventure savedAdventure = new Adventure();
-//        Game savedGame = new Game();
-
+    private void saveGame() {
+        String filename = getAdventureName();
         try {
-            // saving object in a file
-            FileOutputStream outPutStream = new FileOutputStream(filename);
-            ObjectOutputStream outPutDest = new ObjectOutputStream(outPutStream);
-            // method for serialization of object
-            outPutDest.writeObject(savedAdventure);
-//            outPutDest.writeObject(savedGame);
-            // close streams
-            outPutDest.close();
-            outPutStream.close();
+            serializeObject(filename); // saving object in a file
             System.out.println("Your game has been saved!");
         } catch (IOException e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
+    }
+
+    /**
+     * serialize object to save adventure state
+     * @param filename name of game save file
+     * @throws IOException if file cannot be opened
+     */
+    private void serializeObject(String filename) throws IOException {
+        FileOutputStream outPutStream = new FileOutputStream(filename);
+        ObjectOutputStream outPutDest = new ObjectOutputStream(outPutStream);
+        // method for serialization of object
+        outPutDest.writeObject(myAdventure);
+        // close streams
+        outPutDest.close();
+        outPutStream.close();
     }
 
     /**
      * prompt user for the name of the adventure they want to save
      * @return filename of user's choice
      */
-    private String setAdventureName() {
-        String filename = null;
-        boolean invalidFileName = false;
-
+    private String getAdventureName() {
+        String filename;
+        boolean invalidFileName;
         System.out.println("Enter a name for your saved adventure:");
         do {
-            System.out.print("> ");
-            filename = scanner.nextLine();
-            filename = filename.trim();
-            if (filename.equals("null") || filename.isEmpty()) {
-                invalidFileName = true;
-            }
-        } while (filename.equals("null") || filename.isEmpty());
+            filename = promptInput();
+            invalidFileName = checkFileName(filename); // error-checking for no user input
+        } while (invalidFileName);
         myPlayer.setSaveGameName(filename);
-
         return filename;
     }
+
+    /**
+     * check whether user input a filename
+     * @param filename name the user would like to save the game save file as
+     * @return boolean variable representing whether the filename is invalid
+     */
+    private boolean checkFileName(String filename) {
+        boolean invalidFileName = false;
+        if (filename.equals("null") || filename.isEmpty()) {
+            System.out.println("Error: Invalid filename.");
+            invalidFileName = true;
+        }
+        return invalidFileName;
+    }
+
+    /**
+     * load serialized game and error-handling for unsuccessful game load
+     * @param filename name of serialized file the user entered (may be valid or invalid)
+     */
+    private void loadSavedGame(String filename) {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
+            setMyAdventure((Adventure) in.readObject());
+            System.out.println("Your game has successfully loaded!");
+            setIsSerialized(true); // use for overridden toString() method
+        } catch (IOException e) {
+            System.out.println("IOException caught: " + e.getMessage());
+        } catch (Exception e) {
+            fileLoadingError();
+        }
+        resumeSavedGame(); // begin adventure if no error in loading serialized game
+    }
+
+    /**
+     * resume saved game once it has been loaded successfully
+     */
+    private void resumeSavedGame() {
+        setMyPlayer(myAdventure.getPlayer()); // update myPlayer to get current room and continue game play
+        displayRoomInfo(myPlayer.getCurrentRoom());
+        gameLoop(myPlayer.getCurrentRoom());
+        quit();
+    }
+
+    /**
+     * REQUIRED (must have public setters for all member variables)
+     * set myPlayer instance variable in Game class
+     * @param player Player object to set instance variable to
+     */
+    public void setMyPlayer(Player player) {
+        myPlayer = player;
+    }
+
+    /**
+     * toString method prints String instead of mem location on accident
+     * @return String a String representing the status of the game
+     */
+    @Override
+    public String toString() {
+        String gameInfo;
+        // game description
+        if (isSerialized) {
+            gameInfo = "\nUser is playing a serialized game";
+        } else {
+            gameInfo = "\nUser is playing a new game";
+        }
+        // room info
+        gameInfo = gameInfo
+                + "\ncurrent room: " + myPlayer.getCurrentRoom().getName()
+                + "\n" + myPlayer.getCurrentRoom().getLongDescription();
+
+        return gameInfo;
+    }
+
 }

@@ -6,15 +6,14 @@ import java.util.HashMap;
 public class Room implements java.io.Serializable {
     /* you will need to add some private member variables */
     private static final long serialVersionUID = 5218467369631712835L;
-    private Room connectedRoom; // Room object connected to current Room instance
-    private Adventure myAdv = new Adventure();
+    private Adventure myAdv;
     private ArrayList<Item> roomItems; // array list of items in room
-    private String roomName;
-    private String shortDesc;
-    private String longDesc;
-    private long roomID;
-    private boolean isStart;
     private HashMap<String, Long> entrances;
+    private String name;
+    private String shortDescription;
+    private String longDescription;
+    private long roomId;
+    private boolean isStart;
 
     /* required public methods */
 
@@ -31,7 +30,7 @@ public class Room implements java.io.Serializable {
      * @return a String value representing the room name
      */
     public String getName(){
-        return roomName;
+        return name;
     }
 
     /**
@@ -39,26 +38,33 @@ public class Room implements java.io.Serializable {
      * @return String value representing long description of room
      */
     public String getLongDescription(){
-        return longDesc;
+        return longDescription;
     }
 
     /**
      * REQUIRED using direction from user input to find connected room
      * @param givenDir the direction the user wants to go
-     * @return an object of type Room which represents the connected room (if there is an entrance in that direction)
+     * @return Room object connected to current Room instance (if there is an entrance in given direction)
      */
     public Room getConnectedRoom(String givenDir) {
-        connectedRoom = null; // using this removes the need for a break statement
-
-        if (entrances.get(givenDir) != null) { // if parameter for .get() does not exist in hash map
+        Room connectedRoom = null; // using this removes the need for a break statement
+        if (entrances.get(givenDir) != null) { // if entrance in given direction exists
             for (int j = 0; j < myAdv.getTotalNumRooms(); j++) {
-                if (entrances.get(givenDir) == myAdv.listAllRooms().get(j).getRoomID()) {
+                if (entrances.get(givenDir) == myAdv.listAllRooms().get(j).getRoomId()) {
                     connectedRoom = myAdv.listAllRooms().get(j); // set connected room
                 }
             }
         }
 
         return connectedRoom;
+    }
+
+    /**
+     * REQUIRED set room name from JSONObject
+     * @param roomName room name
+     */
+    public void setName(String roomName) {
+        name = roomName;
     }
 
     /* you may wish to add some helper methods*/
@@ -68,45 +74,64 @@ public class Room implements java.io.Serializable {
      * @return String value representing the short description of the room
      */
     public String getShortDescription() {
-        return shortDesc;
+        return shortDescription;
     }
 
     /**
      * returns room id
      * @return a long value representing the room id
      */
-    public long getRoomID() {
-        return roomID;
+    public long getRoomId() {
+        return roomId;
     }
 
     /**
-     * set room info (id, name, short and long description) from JSON file
-     * @param id the room id
-     * @param name the room name
-     * @param shortDescription a short description of the room
-     * @param longDescription a long description of the room
+     * set room id from JSONObject
+     * @param id room id
      */
-    public void setRoomInfo(long id, String name, String shortDescription, String longDescription) {
-        roomID = id;
-        roomName = name;
-        shortDesc = shortDescription;
-        longDesc = longDescription;
+    public void setRoomId(long id) {
+        roomId = id;
     }
 
     /**
-     * add entrance for room from JSON file to Map
+     * set short description of room from JSONObject
+     * @param shortDesc short description of room
+     */
+    public void setShortDescription(String shortDesc) {
+        shortDescription = shortDesc;
+    }
+
+    /**
+     * set long description of room from JSONObject
+     * @param longDesc long description of room
+     */
+    public void setLongDescription(String longDesc) {
+        longDescription = longDesc;
+    }
+
+    /**
+     * add room entrance from JSON file to entrances Map
      * @param id the id of the exit from the current room
      * @param direction the direction in which the exit is in the current room
      */
-    public void setEntrance(long id, String direction) {
+    public void addEntrance(long id, String direction) {
         entrances.put(direction, id);
     }
 
     /**
      * create hash map for entrances
      */
-    public void createEntranceMap() {
+    public void setEntrances() {
         entrances = new HashMap<String, Long>();
+    }
+
+    /**
+     * create ArrayList of room items
+     */
+    public void setRoomItems() {
+        if (roomItems == null) {
+            roomItems = new ArrayList<>();
+        }
     }
 
     /**
@@ -114,17 +139,14 @@ public class Room implements java.io.Serializable {
      * @param item item in room from JSON file
      */
     public void addRoomItem(Item item) {
-        if (roomItems == null) {
-            roomItems = new ArrayList<>();
-        }
         roomItems.add(item);
     }
 
     /**
-     * return room the user starts with in adventure
+     * return start flag of Room object
      * @return boolean variable representing whether room is starting room
      */
-    public boolean getStart() {
+    public boolean getIsStart() {
         return isStart;
     }
 
@@ -132,7 +154,7 @@ public class Room implements java.io.Serializable {
      * set Room with "start" key as the start of the game
      * @param start used to represent whether room was marked as the starting room in the JSON file
      */
-    public void setStart(boolean start) {
+    public void setIsStart(boolean start) {
         isStart = start;
     }
 
@@ -147,10 +169,22 @@ public class Room implements java.io.Serializable {
     /**
      * set roomItems ArrayList to null if no items are left in the ArrayList
      */
-    public void deleteList() {
+    public void deleteListItems() {
         if (roomItems != null && roomItems.size() == 0) {
             roomItems = null;
         }
+    }
+
+    /**
+     * update Adventure instance in Room class every time new room is added
+     * and Game class's Adventure instance is updated
+     * @param adv Adventure object representing the adventure
+     */
+    public void setMyAdv(Adventure adv) {
+        if (adv == null) {
+            myAdv = new Adventure();
+        }
+        myAdv = adv;
     }
 
     /**
@@ -160,24 +194,22 @@ public class Room implements java.io.Serializable {
     @Override
     public String toString() {
         String roomInfo;
-
         // every room has the following info
-        roomInfo = "room name: " + roomName
-                + "\nroom ID: " + roomID
+        roomInfo = "\nroom name: " + name
+                + "\nroom ID: " + roomId
                 + "\nstart room: " + isStart
-                + "\nshort description: " + shortDesc
-                + "\nlong description: " + longDesc;
-
+                + "\nshort description: " + shortDescription
+                + "\nlong description: " + longDescription;
         // if the room contains items
         String items = "\nitems: ";
-        try {
+        if (roomItems != null) {
             for (Item item : roomItems) {
                 items = items.concat("/" + item.getName() + "/ ");
             }
-        } catch (Exception e) {
+        } else {
             items = items.concat("no items in room");
         }
-        roomInfo = roomInfo.concat(items);
+        roomInfo = roomInfo + items;
 
         return roomInfo;
     }
