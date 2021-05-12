@@ -44,3 +44,6 @@ Thumbs.db
 .project
 .settings/
 .vscode/
+
+# Folders generated upon compile / run
+/target
