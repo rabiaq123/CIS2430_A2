@@ -39,7 +39,7 @@ Thumbs.db
 # Other generated files from IDE #
 ##################################
 .idea
-.iml
+*.iml
 .classpath
 .project
 .settings/
