@@ -17,13 +17,12 @@ A game modeled after the 1977 game Colossal Caves, developed using OOP principle
 
 ## Game play
 
-* use 'go' and the subjects: N, S, E, W, up, or down to move from room to room in the loaded adventure.
-* type 'look' to see a longer description of the room you are in.
-  * type 'look' followed by the name of an item to see a longer description of an item in the room you are in.
-* type 'take' followed by an item name to pick up an item and carry it.
-* type 'inventory' to see list of items in your inventory.
-* enter 'quit' at any point to quit.
-* enter 'help' at any point during the game to for commands/help.
+* use `go` and the subjects: `N`, `S`, `E`, `W`, `up`, or `down` to move from room to room in the loaded adventure.
+* type `look` to see a longer description of the room you are in.
+  * type `look` followed by the name of an item to see a longer description of an item in the room you are in.
+* type `take` followed by an item name to pick up an item and carry it.
+* type `inventory` to see list of items in your inventory.
+* enter `quit` at any point to quit.
+* enter `help` at any point during the game for commands/help.
 * upon choosing to quit, you will be given a choice to save your progress in the game:
   * enter a name to identify the game save
-  * load your saved game when starting the program if desired
