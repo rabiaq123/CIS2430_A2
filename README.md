@@ -1,4 +1,4 @@
-# CIS2430*S20 (Object-Oriented Programming) Assignment 2
+# CIS2430*S20 (OOP) Assignment 2
 
 A game modeled after the 1977 game Colossal Caves, developed using OOP principles with Java.
 
