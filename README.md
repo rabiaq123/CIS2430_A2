@@ -11,6 +11,7 @@ A game modeled after the 1977 game Colossal Caves, developed using OOP principle
     * If the file is within another directory (outside of root), you must use:
       * `../filename.json` to navigate up one directory level, or
       * `/foldername/filename.json` to enter another folder.
+    * a sample JSON file `custom_adventure.json` is provided in the root directory for use :)
   * `-l` followed by a valid game save name will load a previously saved game
   * using either of the flags is optional; no flag will load the default adventure
 
