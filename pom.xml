@@ -6,10 +6,8 @@ checkstyle: mvn checkstyle:checkstyle  (results show up in target/site)
 compile : mvn compile
 junit: mvn test
 execute: mvn exec:java
-jar: mvn assembly:assembly
- (this will make two jar files.  Use the one with dependencies)
-
-to run your executable jar: java -jar <pathtoexecutablejarwithdependencies> <flags>
+jar: mvn assembly:single
+to run your jar: java -jar target/2430_A2-1.0-jar-with-dependencies.jar <flags>
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
